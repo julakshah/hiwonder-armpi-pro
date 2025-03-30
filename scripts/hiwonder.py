@@ -10,6 +10,7 @@ import numpy as np
 from scripts.board_controller import BoardController
 from scripts.servo_bus_controller import ServoBusController
 import scripts.utils as ut
+import scripts.inverse_kinematics as ik
 
 # Robot base constants
 WHEEL_RADIUS = 0.047  # meters
@@ -47,6 +48,8 @@ class HiwonderRobot:
         if cmd.arm_home:
             self.move_to_home_position()
 
+        if cmd.ik_pt_follow:
+            self.go_to_points([])
         print(f'---------------------------------------------------------------------')
         
         # self.set_base_velocity(cmd)
@@ -126,6 +129,20 @@ class HiwonderRobot:
         # set new joint angles
         self.set_joint_values(new_thetalist, radians=False)
 
+    def go_to_points(self, points: list, numerical=True):
+        """
+        Moves robot to a set of point positions.
+        
+        Args:
+            points: a set of xyz coordinates that will be moved towards, row by row.
+        """
+        
+        print("running go_to_points")
+        for _ in len(points):
+            # Get theta values for num-ik
+            thetas = ik.calc_numerical_ik(self.joint_values)
+            # Make robot move to theta values
+            self.set_joint_values(thetas)
 
     def set_joint_value(self, joint_id: int, theta: float, duration=250, radians=False):
         """ Moves a single joint to a specified angle """

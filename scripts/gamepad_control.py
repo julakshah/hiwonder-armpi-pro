@@ -31,6 +31,7 @@ class GamepadControl:
         self.ARM_J5_FLAG = False
         self.ARM_EE_FLAG = False
         self.ARM_HOME = False
+        self.INVERSE_POINT_FOLLOW = False
 
     
     def initialize_gamepad(self):
@@ -82,6 +83,7 @@ class GamepadControl:
         gamepad_cmds.arm_j5 = self.map_value(self.abs_x, [-32767, 32767], [-0.1, 0.1]) if self.ARM_J5_FLAG else 0.0
         gamepad_cmds.arm_ee = self.map_value(self.abs_x, [-32767, 32767], [-0.1, 0.1]) if self.ARM_EE_FLAG else 0.0
         gamepad_cmds.arm_home = int(self.ARM_HOME)
+        gamepad_cmds.ik_pt_follow = int(self.INVERSE_POINT_FOLLOW)
 
         self.gamepad_cmds_prev = gamepad_cmds
         return gamepad_cmds
@@ -100,7 +102,8 @@ class GamepadControl:
             'BTN_NORTH': ('ARM_J4_FLAG', bool(event.state)),
             'ABS_RZ': ('ARM_J5_FLAG', bool(event.state)),
             'ABS_Z': ('ARM_EE_FLAG', bool(event.state)),
-            'BTN_SELECT': ('ARM_HOME', bool(event.state))
+            'BTN_SELECT': ('ARM_HOME', bool(event.state)),
+            'BTN_START': ('INVERSE_POINT_FOLLOW', bool(event.state))
         }
 
         if event.code in code_map:
