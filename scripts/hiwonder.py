@@ -7,9 +7,9 @@ Handles the control of the mobile base and 5-DOF robotic arm using commands rece
 
 import time
 import numpy as np
-from board_controller import BoardController
-from servo_bus_controller import ServoBusController
-import utils as ut
+from scripts.board_controller import BoardController
+from scripts.servo_bus_controller import ServoBusController
+import scripts.utils as ut
 
 # Robot base constants
 WHEEL_RADIUS = 0.047  # meters

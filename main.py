@@ -13,9 +13,9 @@ import traceback
 # Extend system path to include script directory
 sys.path.append(os.path.join(os.getcwd(), 'scripts'))
 
-from hiwonder import HiwonderRobot
-from gamepad_control import GamepadControl
-import utils
+from scripts.hiwonder import HiwonderRobot
+from scripts.gamepad_control import GamepadControl
+import scripts.utils
 
 
 # Initialize components

@@ -7,7 +7,7 @@ This module initializes a connected gamepad and translates its inputs into robot
 
 import inputs
 import time
-from utils import GamepadCmds
+from scripts.utils import GamepadCmds
 
 
 class GamepadControl:
