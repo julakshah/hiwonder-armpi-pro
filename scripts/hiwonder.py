@@ -17,6 +17,7 @@ WHEEL_RADIUS = 0.047  # meters
 BASE_LENGTH_X = 0.096  # meters
 BASE_LENGTH_Y = 0.105  # meters
 
+
 class HiwonderRobot:
     def __init__(self):
         """Initialize motor controllers, servo bus, and default robot states."""
@@ -33,6 +34,8 @@ class HiwonderRobot:
         self.speed_control_delay = 0.2
 
         self.move_to_home_position()
+
+        self.list_point = 0
 
     # -------------------------------------------------------------
     # Methods for interfacing with the mobile base
@@ -136,13 +139,16 @@ class HiwonderRobot:
         Args:
             points: a set of xyz coordinates that will be moved towards, row by row.
         """
+        if self.list_point > len(points):
+            print(f"points reset")
+            self.list_point = 0
         
         print("running go_to_points")
-        for _ in len(points):
-            # Get theta values for num-ik
-            thetas = ik.calc_numerical_ik(self.joint_values)
-            # Make robot move to theta values
-            self.set_joint_values(thetas)
+        # for _ in len(points):
+        # Get theta values for num-ik
+        thetas = ik.calc_numerical_ik(points[self.list_point])
+        # Make robot move to theta values
+        self.set_joint_values(thetas)
 
     def set_joint_value(self, joint_id: int, theta: float, duration=250, radians=False):
         """ Moves a single joint to a specified angle """
