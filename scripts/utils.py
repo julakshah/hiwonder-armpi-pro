@@ -6,9 +6,11 @@ from functools import singledispatch
 
 PI = 3.1415926535897932384
 
+
 @dataclass
 class State:
-    """This dataclass represents the system state (pos and vel) """
+    """This dataclass represents the system state (pos and vel)"""
+
     x: float = 0.0
     y: float = 0.0
     theta: float = 0.0
@@ -19,7 +21,8 @@ class State:
 
 @dataclass
 class Controls:
-    """This dataclass represents the system controls """
+    """This dataclass represents the system controls"""
+
     v: float = 0.0
     w: float = 0.0
     vx: float = 0.0
@@ -28,7 +31,8 @@ class Controls:
 
 @dataclass
 class GamepadCmds:
-    """This dataclass represents the gamepad commands """
+    """This dataclass represents the gamepad commands"""
+
     base_vx: int = 0
     base_vy: int = 0
     base_w: int = 0
@@ -44,6 +48,7 @@ class GamepadCmds:
     arm_home: int = 0
     ik_pt_follow: int = 0
 
+
 def print_dataclass(obj):
     print("------------------------------------")
     for field in obj.__dataclass_fields__:
@@ -58,6 +63,7 @@ class EndEffector:
     rotx: float = 0.0
     roty: float = 0.0
     rotz: float = 0.0
+
 
 class FiveDOFRobot:
     """
@@ -137,9 +143,9 @@ class FiveDOFRobot:
         # return jacobian
 
         self.H_01 = dh_to_matrix([self.theta[0], self.l1, 0, -90])
-        self.H_12 = dh_to_matrix([self.theta[1] -90, 0, self.l2, 180])
+        self.H_12 = dh_to_matrix([self.theta[1] + 90, 0, self.l2, 180])
         self.H_23 = dh_to_matrix([self.theta[2], 0, self.l3, 180])
-        self.H_34 = dh_to_matrix([self.theta[3] + 90, 0, 0, 90])
+        self.H_34 = dh_to_matrix([self.theta[3] - 90, 0, 0, -90])
         self.H_45 = dh_to_matrix([self.theta[4], self.l4 + self.l5, 0, 0])
 
         self.H05 = self.H_01 @ self.H_12 @ self.H_23 @ self.H_34 @ self.H_45
@@ -198,18 +204,18 @@ def rotm_to_euler(R) -> tuple:
 
     Returns:
         tuple: Roll, pitch, and yaw angles (in radians).
-    
+
     Reference:
         Based on the method described at:
         https://motion.cs.illinois.edu/software/klampt/latest/pyklampt_docs/_modules/klampt/math/so3.html
     """
-    r31 = R[2,0] # -sin(p)
-    r11 = R[0,0] # cos(r)*cos(p)
-    r33 = R[2,2] # cos(p)*cos(y)
-    r12 = R[0,1] # -sin(r)*cos(y) + cos(r)*sin(p)*sin(y)
+    r31 = R[2, 0]  # -sin(p)
+    r11 = R[0, 0]  # cos(r)*cos(p)
+    r33 = R[2, 2]  # cos(p)*cos(y)
+    r12 = R[0, 1]  # -sin(r)*cos(y) + cos(r)*sin(p)*sin(y)
 
     # compute pitch
-        # condition r31 to the range of asin [-1, 1]
+    # condition r31 to the range of asin [-1, 1]
     r31 = min(1.0, max(r31, -1.0))
     p = -math.asin(r31)
     cosp = math.cos(p)
@@ -224,22 +230,21 @@ def rotm_to_euler(R) -> tuple:
         # condition cosy to the range of acos [-1, 1]
         cosy = min(1.0, max(cosy, -1.0))
         y = math.acos(cosy)
-    
+
     else:
         # pitch (p) is close to 90 deg, i.e. cos(p) = 0.0
         # there are an infinitely many solutions, so we set y = 0
         y = 0
         # r12: -sin(r)*cos(y) + cos(r)*sin(p)*sin(y) -> -sin(r)
-            # condition r12 to the range of asin [-1, 1]
+        # condition r12 to the range of asin [-1, 1]
         r12 = min(1.0, max(r12, -1.0))
         r = -math.asin(r12)
-    
-    
-    r11 = R[0,0] if abs(R[0,0]) > 1e-7 else 0.0
-    r21 = R[1,0] if abs(R[1,0]) > 1e-7 else 0.0
-    r32 = R[2,1] if abs(R[2,1]) > 1e-7 else 0.0
-    r33 = R[2,2] if abs(R[2,2]) > 1e-7 else 0.0
-    r31 = R[2,0] if abs(R[2,0]) > 1e-7 else 0.0
+
+    r11 = R[0, 0] if abs(R[0, 0]) > 1e-7 else 0.0
+    r21 = R[1, 0] if abs(R[1, 0]) > 1e-7 else 0.0
+    r32 = R[2, 1] if abs(R[2, 1]) > 1e-7 else 0.0
+    r33 = R[2, 2] if abs(R[2, 2]) > 1e-7 else 0.0
+    r31 = R[2, 0] if abs(R[2, 0]) > 1e-7 else 0.0
 
     # print(f"R : {R}")
 
@@ -247,15 +252,15 @@ def rotm_to_euler(R) -> tuple:
         # print("special case")
         # pitch is close to 90 deg, i.e. cos(pitch) = 0.0
         # there are an infinitely many solutions, so we set yaw = 0
-        pitch, yaw = PI/2, 0.0
+        pitch, yaw = PI / 2, 0.0
         # r12: -sin(r)*cos(y) + cos(r)*sin(p)*sin(y) -> -sin(r)
-            # condition r12 to the range of asin [-1, 1]
+        # condition r12 to the range of asin [-1, 1]
         r12 = min(1.0, max(r12, -1.0))
         roll = -math.asin(r12)
     else:
-        yaw = math.atan2(r32, r33)        
+        yaw = math.atan2(r32, r33)
         roll = math.atan2(r21, r11)
-        denom = math.sqrt(r11 ** 2 + r21 ** 2)
+        denom = math.sqrt(r11**2 + r21**2)
         pitch = math.atan2(-r31, denom)
 
     return roll, pitch, yaw
@@ -271,12 +276,24 @@ def dh_to_matrix(dh_params: list) -> np.ndarray:
         np.ndarray: A 4x4 transformation matrix.
     """
     theta, d, a, alpha = dh_params
-    return np.array([
-        [cos(theta), -sin(theta) * cos(alpha), sin(theta) * sin(alpha), a * cos(theta)],
-        [sin(theta), cos(theta) * cos(alpha), -cos(theta) * sin(alpha), a * sin(theta)],
-        [0, sin(alpha), cos(alpha), d],
-        [0, 0, 0, 1]
-    ])
+    return np.array(
+        [
+            [
+                cos(theta),
+                -sin(theta) * cos(alpha),
+                sin(theta) * sin(alpha),
+                a * cos(theta),
+            ],
+            [
+                sin(theta),
+                cos(theta) * cos(alpha),
+                -cos(theta) * sin(alpha),
+                a * sin(theta),
+            ],
+            [0, sin(alpha), cos(alpha), d],
+            [0, 0, 0, 1],
+        ]
+    )
 
 
 def euler_to_rotm(rpy: tuple) -> np.ndarray:
@@ -288,15 +305,27 @@ def euler_to_rotm(rpy: tuple) -> np.ndarray:
     Returns:
         np.ndarray: A 3x3 rotation matrix.
     """
-    R_x = np.array([[1, 0, 0],
-                    [0, math.cos(rpy[2]), -math.sin(rpy[2])],
-                    [0, math.sin(rpy[2]), math.cos(rpy[2])]])
-    R_y = np.array([[math.cos(rpy[1]), 0, math.sin(rpy[1])],
-                    [0, 1, 0],
-                    [-math.sin(rpy[1]), 0, math.cos(rpy[1])]])
-    R_z = np.array([[math.cos(rpy[0]), -math.sin(rpy[0]), 0],
-                    [math.sin(rpy[0]), math.cos(rpy[0]), 0],
-                    [0, 0, 1]])
+    R_x = np.array(
+        [
+            [1, 0, 0],
+            [0, math.cos(rpy[2]), -math.sin(rpy[2])],
+            [0, math.sin(rpy[2]), math.cos(rpy[2])],
+        ]
+    )
+    R_y = np.array(
+        [
+            [math.cos(rpy[1]), 0, math.sin(rpy[1])],
+            [0, 1, 0],
+            [-math.sin(rpy[1]), 0, math.cos(rpy[1])],
+        ]
+    )
+    R_z = np.array(
+        [
+            [math.cos(rpy[0]), -math.sin(rpy[0]), 0],
+            [math.sin(rpy[0]), math.cos(rpy[0]), 0],
+            [0, 0, 1],
+        ]
+    )
     return R_z @ R_y @ R_x
 
 
@@ -316,6 +345,7 @@ class SimData:
         vx (List[float]): x-component of linear velocity over time.
         vy (List[float]): y-component of linear velocity over time.
     """
+
     x: List[float] = field(default_factory=list)
     y: List[float] = field(default_factory=list)
     theta: List[float] = field(default_factory=list)
