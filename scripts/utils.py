@@ -59,6 +59,136 @@ class EndEffector:
     roty: float = 0.0
     rotz: float = 0.0
 
+class FiveDOFRobot:
+    """
+    A class to represent a 5-DOF robotic arm with kinematics calculations, including
+    forward kinematics, inverse kinematics, velocity kinematics, and Jacobian computation.
+
+    Attributes:
+        l1, l2, l3, l4, l5: Link lengths of the robotic arm.
+        theta: List of joint angles in radians.
+        theta_limits: Joint limits for each joint.
+        ee: End-effector object for storing the position and orientation of the end-effector.
+        num_dof: Number of degrees of freedom (5 in this case).
+        points: List storing the positions of the robot joints.
+        DH: Denavit-Hartenberg parameters for each joint.
+        T: Transformation matrices for each joint.
+    """
+
+    def __init__(self):
+        """Initialize the robot parameters and joint limits."""
+        # Link lengths
+        # self.l1, self.l2, self.l3, self.l4, self.l5 = 0.30, 0.15, 0.18, 0.15, 0.12
+        self.l1, self.l2, self.l3, self.l4, self.l5 = 0.155, 0.099, 0.095, 0.055, 0.105
+
+        # Joint angles (initialized to zero)
+        self.theta = [0, 0, 0, 0, 0]
+
+        # Joint limits (in radians)
+        self.theta_limits = [
+            [-np.pi, np.pi],
+            [-np.pi / 3, np.pi],
+            [-np.pi + np.pi / 12, np.pi - np.pi / 4],
+            [-np.pi + np.pi / 12, np.pi - np.pi / 12],
+            [-np.pi, np.pi],
+        ]
+
+        # End-effector object
+        self.ee = EndEffector()
+
+        # Robot's points
+        self.num_dof = 5
+        self.points = [None] * (self.num_dof + 1)
+
+        # Denavit-Hartenberg parameters and transformation matrices
+
+        self.H05 = np.array(
+            [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]
+        )  # Denavit-Hartenberg parameters (theta, d, a, alpha)
+        # Transformation matrices
+
+        self.H_01 = np.empty((4, 4))
+        self.H_12 = np.empty((4, 4))
+        self.H_23 = np.empty((4, 4))
+        self.H_34 = np.empty((4, 4))
+        self.H_45 = np.empty((4, 4))
+
+        self.T = np.zeros((self.num_dof, 4, 4))
+        # print(self.T)
+
+        ########################################
+
+        ########################################
+
+    def jacobian_v(self):
+        """
+        blah blah
+
+
+        """
+        # if theta is None:
+        # theta = self.theta
+
+        # Initialize a 3x5 matrix for jacobian
+        # for first col, take offset vector from H05, and put in first col of matrix
+        # for next col, calc offset to be H05 offset - offset between H01
+        # continue doing this for each offset
+        # combine all collumns into jacobian matrix
+        # return jacobian
+
+        self.H_01 = dh_to_matrix([self.theta[0], self.l1, 0, -90])
+        self.H_12 = dh_to_matrix([self.theta[1] -90, 0, self.l2, 180])
+        self.H_23 = dh_to_matrix([self.theta[2], 0, self.l3, 180])
+        self.H_34 = dh_to_matrix([self.theta[3] + 90, 0, 0, 90])
+        self.H_45 = dh_to_matrix([self.theta[4], self.l4 + self.l5, 0, 0])
+
+        self.H05 = self.H_01 @ self.H_12 @ self.H_23 @ self.H_34 @ self.H_45
+
+        J = np.empty((3, 5))
+
+        t1 = self.H05[0:3, 3]
+        r1 = np.array([0, 0, 1])
+        j1 = np.cross(r1, t1)
+        J[0:3, 0] = j1
+
+        t2 = self.H05[0:3, 3] - self.H_01[0:3, 3]
+        r2 = self.H_01[0:3, 2]
+        j2 = np.cross(r2, t2)
+        J[0:3, 1] = j2
+
+        t3 = self.H05[0:3, 3] - (self.H_01 @ self.H_12)[0:3, 3]
+        r3 = (self.H_01 @ self.H_12)[0:3, 2]
+        j3 = np.cross(r3, t3)
+        J[0:3, 2] = j3
+
+        t4 = self.H05[0:3, 3] - (self.H_01 @ self.H_12 @ self.H_23)[0:3, 3]
+        r4 = (self.H_01 @ self.H_12 @ self.H_23)[0:3, 2]
+        j4 = np.cross(r4, t4)
+        J[0:3, 3] = j4
+
+        t5 = self.H05[0:3, 3] - (self.H_01 @ self.H_12 @ self.H_23 @ self.H_34)[0:3, 3]
+        r5 = (self.H_01 @ self.H_12 @ self.H_23 @ self.H_34)[0:3, 2]
+        j5 = np.cross(r5, t5)
+        J[0:3, 4] = j5
+        return J
+
+    def inverse_jacobian(self):
+        """
+        Creates the inverse jacobian matrix based on the jacobian.
+
+        Returns:
+            the pseudo inverse of the jacobian matrix
+        """
+        J = self.jacobian_v()
+
+        # Calculate pinv of the jacobian
+        lambda_constant = 0.01
+        J_inv = np.transpose(J) @ np.linalg.inv(
+            ((J @ np.transpose(J)) + lambda_constant**2 * np.identity(3))
+        )
+
+        return J_inv
+
 
 def rotm_to_euler(R) -> tuple:
     """Converts a rotation matrix to Euler angles (roll, pitch, yaw).
